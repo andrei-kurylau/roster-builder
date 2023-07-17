@@ -39,6 +39,7 @@ export class MainComponent {
 
   public exportData(): void {
     const str = JSON.stringify(this.playersList.records);
-    prompt('Your import string is:', str);
+    navigator.clipboard.writeText(str);
+    alert("Export string copied to clipboard");
   }
 }
