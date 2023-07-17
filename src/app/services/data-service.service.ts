@@ -23,8 +23,8 @@ export interface RosterVariaton {
 })
 export class DataService {
   numberOfTanks = 3;
-  numberOfHealers = 4;
-  numberOfDps = 18;
+  numberOfHealers = 5;
+  numberOfDps = 17;
 
   constructor() { }
 
@@ -45,7 +45,7 @@ export class DataService {
 
     let currentTry = 0;
     // Generate variations
-    while (currentTry < 50000) {
+    while (currentTry < 100000) {
       const raidOne: Raid = {
         tanks: [],
         healers: [],

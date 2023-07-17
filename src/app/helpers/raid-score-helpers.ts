@@ -93,19 +93,19 @@ export class RaidScoreHelpers {
     if ((raidTwoClassMetric.healers[ClassName.Paladin] + raidTwoClassMetric.healers[ClassName.Shaman]) < 2) {
       score = score - 100;
     }
-    if (raidOneClassMetric.healers[ClassName.Priest] !== 1) {
-      score = score - 50;
+    if (raidOneClassMetric.healers[ClassName.Priest] > 2) {
+      score = score - 10;
     }
-    if (raidTwoClassMetric.healers[ClassName.Priest] !== 1) {
-      score = score - 50;
+    if (raidTwoClassMetric.healers[ClassName.Priest] > 2) {
+      score = score - 100;
     }
 
     // apply penalty for not optimal tank setup
-    if (raidOneClassMetric.tanks[ClassName.Paladin] < 2) {
-      score = score - 100;
+    if ((raidOneClassMetric.tanks[ClassName.Paladin] + raidOneClassMetric.tanks[ClassName.Warrior]) < 2) {
+      score = score - 200;
     }
-    if (raidTwoClassMetric.tanks[ClassName.Paladin] < 2) {
-      score = score - 100;
+    if ((raidTwoClassMetric.tanks[ClassName.Paladin] + raidTwoClassMetric.tanks[ClassName.Warrior]) < 1) {
+      score = score - 200;
     }
     if (raidOneClassMetric.tanks[ClassName.Druid] < 1) {
       score = score - 50;
