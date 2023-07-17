@@ -1,0 +1,15 @@
+<app-players-list #playersList></app-players-list>
+
+<div class="main_buttons">
+  <button mat-raised-button color="primary" (click)="saveData()">Save List</button>
+  <button mat-raised-button color="primary" (click)="generateRosters()">Generate</button>
+</div>
+
+<div *ngIf="didTryGenerate && raids?.length === 0" class="main_error-message">
+  Not enough players, generator could not build a valid roster
+</div>
+
+<div *ngIf="didTryGenerate && raids?.length === 2" class="main_raids">
+  <app-raid-visualisation [raid]="raids[0]"></app-raid-visualisation>
+  <app-raid-visualisation [raid]="raids[1]"></app-raid-visualisation>
+</div>

@@ -1,0 +1,13 @@
+app-character-spot{
+  display: flex;
+  height: 30px;
+  margin: 2px;
+
+  > div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
+}

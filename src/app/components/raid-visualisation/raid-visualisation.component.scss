@@ -1,0 +1,14 @@
+:host {
+  display: block;
+  background-color: lightgray;
+  margin-bottom: 10px;
+}
+
+.raid-visualisation_headers, .raid-visualisation_grid {
+  display: flex;
+  flex-direction: row;
+
+  > div {
+    width: 200px;
+  }
+}

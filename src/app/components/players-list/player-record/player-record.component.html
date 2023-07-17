@@ -1,0 +1,54 @@
+<input matInput type="text" [(ngModel)]="record.name">
+
+<mat-select [(value)]="mainClass" [style.backgroundColor]="mainClassColor">
+  <mat-option *ngFor="let playerClass of classOptions" [style.backgroundColor]="playerClass.color"
+    [value]="playerClass.value">
+    {{ playerClass.label }}
+  </mat-option>
+</mat-select>
+
+<input matInput type="text" [disabled]="!mainClass" [(ngModel)]="record.priority">
+
+<mat-select [(value)]="record.mainSpec" [disabled]="!mainClass">
+  <mat-option *ngFor="let playerSpec of mainSpecOptions" [value]="playerSpec.value">
+    {{ playerSpec.label }}
+  </mat-option>
+</mat-select>
+
+<mat-select [(value)]="record.offSpec" [disabled]="!mainClass">
+  <mat-option *ngFor="let playerSpec of mainSpecOptions" [value]="playerSpec.value">
+    {{ playerSpec.label }}
+  </mat-option>
+</mat-select>
+
+<mat-select [(value)]="altClass" [style.backgroundColor]="altClassColor">
+  <mat-option *ngFor="let playerClass of classOptions" [style.bgColor]="playerClass.color" [value]="playerClass.value"
+    [style.backgroundColor]="playerClass.color">
+    {{ playerClass.label }}
+  </mat-option>
+</mat-select>
+
+<input matInput type="text" [disabled]="!altClass" [(ngModel)]="record.altPriority">
+
+<mat-select [(value)]="record.altMainSpec" [disabled]="!altClass">
+  <mat-option *ngFor="let playerSpec of altSpecOptions" [value]="playerSpec.value">
+    {{ playerSpec.label }}
+  </mat-option>
+</mat-select>
+
+<mat-select [(value)]="record.altOffSpec" [disabled]="!altClass">
+  <mat-option *ngFor="let playerSpec of altSpecOptions" [value]="playerSpec.value">
+    {{ playerSpec.label }}
+  </mat-option>
+</mat-select>
+
+
+<div>
+  <mat-checkbox [(ngModel)]="record.firstRaidAvailable">
+  </mat-checkbox>
+</div>
+
+<div>
+  <mat-checkbox [(ngModel)]="record.secondRaidAvailable">
+  </mat-checkbox>
+</div>

@@ -1,0 +1,24 @@
+:host {
+  display: grid;
+  grid-template-columns: 150px 130px 100px 130px 130px 130px 100px 130px 130px 100px 100px;
+  width: fit-content;
+  border-left: 1px solid lightgrey;
+
+  >input,
+  >mat-select,
+  >div {
+    height: 30px;
+    font-size: 15px;
+    padding: 5px;
+    border: none;
+    outline: none;
+    border-right: 1px solid lightgrey;
+    border-bottom: 1px solid lightgrey;
+  }
+
+  >div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}

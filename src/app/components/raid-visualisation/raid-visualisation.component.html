@@ -1,0 +1,27 @@
+<div class="raid-visualisation_headers">
+  <div>{{ 'Tanks(' + raid?.tanks?.length + ')'}}</div>
+  <div>{{ 'Melee(' + melee?.length + ')'}}</div>
+  <div>{{ 'Ranged(' + ranged?.length + ')'}}</div>
+  <div>{{ 'Healers(' + raid?.healers?.length + ')'}}</div>
+  <div>{{ 'Bench(' + raid?.bench?.length + ')'}}</div>
+</div>
+
+<div class="raid-visualisation_grid">
+  <div class="raid-visualisation_column">
+    <app-character-spot *ngFor="let char of raid?.tanks" [character]="char"></app-character-spot>
+  </div>
+  <div class="raid-visualisation_column">
+    <app-character-spot *ngFor="let char of melee" [character]="char"></app-character-spot>
+  </div>
+  <div class="raid-visualisation_column">
+    <app-character-spot *ngFor="let char of ranged" [character]="char"></app-character-spot>
+  </div>
+  <div class="raid-visualisation_column">
+    <app-character-spot *ngFor="let char of raid?.healers" [character]="char"></app-character-spot>
+  </div>
+  <div class="raid-visualisation_column">
+    <app-character-spot *ngFor="let char of raid?.bench" [character]="char"></app-character-spot>
+  </div>
+</div>
+
+<div>{{ 'Total in raid:' + (raid.tanks?.length + raid.healers?.length + raid.dps?.length)}}</div>

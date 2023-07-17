@@ -1,0 +1,19 @@
+:host {
+  display: flex;
+  height: 100%;
+  padding: 20px 5px;
+}
+
+.main_buttons {
+  display: flex;
+  flex-direction: column;
+  > * {
+    margin: 10px;
+  }
+}
+
+.main_error-message {
+  font-size: 20px;
+  color: crimson;
+  margin: 30px;
+}

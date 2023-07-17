@@ -1,0 +1,16 @@
+
+.players-list_headers {
+  display: grid;
+  grid-template-columns: 150px 130px 100px 130px 130px 130px 100px 130px 130px 100px 100px;
+  width: fit-content;
+  border-left: 1px solid lightgrey;
+
+  > div {
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    font-size: 16px;
+    border: 1px solid lightgrey;
+    border-left: none;
+  }
+}
