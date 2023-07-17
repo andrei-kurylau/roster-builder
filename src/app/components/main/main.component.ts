@@ -26,4 +26,19 @@ export class MainComponent {
     this.didTryGenerate = true;
     this.raids = this.dataService.generateRosters(this.playersList.records);
   }
+
+  public importData(): void {
+    const importString = prompt('Enter import string');
+    try {
+      const records = JSON.parse(importString);
+      this.playersList.records = records;
+    } catch (error) {
+      console.log('Failed import: invalid string');
+    }
+  }
+
+  public exportData(): void {
+    const str = JSON.stringify(this.playersList.records);
+    prompt('Your import string is:', str);
+  }
 }
