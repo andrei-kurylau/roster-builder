@@ -23,7 +23,7 @@ export class RaidScoreHelpers {
     // penalty for missing buffs
     for (let buffId in metric.buffs) {
       if (metric.buffs[buffId] === 0) {
-        score = score - 50;
+        score = score - 100;
       }
     }
 
@@ -35,7 +35,7 @@ export class RaidScoreHelpers {
     // penalty for missing debuffs
     for (let debuffId in metric.debuffs) {
       if (metric.debuffs[debuffId] === 0) {
-        score = score - 50;
+        score = score - 100;
       }
     }
 
