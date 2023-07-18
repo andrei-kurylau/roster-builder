@@ -6,6 +6,7 @@ import { Player } from "../interfaces/player";
 import { Raid } from "../interfaces/raid";
 import { CharacterPool } from "../services/data-service.service";
 import { GlobalHelpers } from "./global-helpers";
+import { RaidScoreHelpers } from "./raid-score-helpers";
 
 export class DataHelpers {
   public static removeCharactersFromPool(chars: Character[], pool: CharacterPool, removeAlts: boolean = false): void {
@@ -47,6 +48,8 @@ export class DataHelpers {
         class: Classes[rec.mainClass],
         priority: rec.priority,
         spec: Classes[rec.mainClass].specs.find(spec => spec.name === rec.mainSpec),
+        isAlt: false,
+        isOffSpec: false,
         firstRaidAvailable: rec.firstRaidAvailable,
         secondRaidAvailable: rec.secondRaidAvailable,
       });
@@ -58,6 +61,7 @@ export class DataHelpers {
           class: Classes[rec.mainClass],
           priority: rec.priority,
           spec: Classes[rec.mainClass].specs.find(spec => spec.name === rec.offSpec),
+          isAlt: false,
           isOffSpec: true,
           firstRaidAvailable: rec.firstRaidAvailable,
           secondRaidAvailable: rec.secondRaidAvailable,
@@ -94,6 +98,51 @@ export class DataHelpers {
 
       return player;
     })
+  }
+
+  public static addCharacterToRaid(raid: Raid, char: Character): void {
+    switch (char.spec.role) {
+      case Role.Tank:
+        raid.tanks.push(char);
+        break;
+      case Role.Healer:
+        raid.healers.push(char);
+        break;
+      default:
+        raid.dps.push(char);
+        break;
+    }
+  }
+
+  public static getBestPossibleCharacterFromPool(pool: Character[], raidOne: Raid): Character {
+    const currentPenaltyPoints = RaidScoreHelpers.calculateRaidPenaltyPoints(raidOne);
+    let bestCharOptions: Character[] = [];
+    let currentBestCharScore = 0;
+
+    for (let character of pool) {
+      const raidCopy = GlobalHelpers.safeCopy(raidOne);
+      this.addCharacterToRaid(raidCopy, character);
+      const newPenaltyPoints = RaidScoreHelpers.calculateRaidPenaltyPoints(raidCopy);
+      if (currentPenaltyPoints > newPenaltyPoints) {
+        const charScore = (currentPenaltyPoints - newPenaltyPoints) * (character.priority / 100) * (character.isOffSpec ? 0.5 : 1) * (character.isAlt ? 0.7 : 1);
+        if (currentBestCharScore < charScore) {
+          currentBestCharScore = charScore;
+          bestCharOptions = [character];
+        }
+        if (currentBestCharScore === charScore) {
+          bestCharOptions.push(character);
+        }
+      }
+    }
+
+    // priority goes for characters who cant go to other raid
+    const filteredCharacters = bestCharOptions.filter(char => !char.firstRaidAvailable || !char.secondRaidAvailable);
+
+    if (filteredCharacters?.length > 0) {
+      return this.getRandomCharacter(filteredCharacters);
+    }
+
+    return this.getRandomCharacter(bestCharOptions);
   }
 
   public static getRandomCharacter(array: Character[]): Character {

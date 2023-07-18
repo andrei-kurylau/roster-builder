@@ -12,19 +12,22 @@ export class MainComponent {
   @ViewChild('playersList') playersList: PlayersListComponent;
 
   public raids: Raid[] = [];
-  public didTryGenerate: boolean = false;
+  public isGenerating: boolean = false;
 
   constructor(
     private dataService: DataService
-  ) {}
+  ) { }
 
   public saveData(): void {
     this.playersList.saveData();
   }
 
   public generateRosters(): void {
-    this.didTryGenerate = true;
-    this.raids = this.dataService.generateRosters(this.playersList.records);
+    this.isGenerating = true;
+    setTimeout(() => {
+      this.raids = this.dataService.generateRosters(this.playersList.records);
+      this.isGenerating = false;
+    }, 0);
   }
 
   public importData(): void {

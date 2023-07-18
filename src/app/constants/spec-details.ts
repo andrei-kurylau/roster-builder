@@ -114,7 +114,7 @@ export const SpecDetails: {
   },
   // Shaman
   [SpecName.Elem]: {
-    buffs: [Buff.SpellCrit, Buff.SpellHaste, Buff.SpellPower, Buff.StrengthAgility, Buff.PassiveHealing, Buff.SpellHaste],
+    buffs: [Buff.SpellCrit, Buff.SpellHaste, Buff.StrengthAgility, Buff.PassiveHealing, Buff.SpellHaste],
     debuffs: [Debuff.GlobalCrit],
     cooldowns: [Cooldown.Heroism]
   },

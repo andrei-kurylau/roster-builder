@@ -9,46 +9,44 @@ import { Raid } from "../interfaces/raid";
 import { DataHelpers } from "./data-helpers";
 import { GlobalHelpers } from "./global-helpers";
 
-const DESIRED_PRIORITY_SCORE = 2280;
-
 export class RaidScoreHelpers {
 
-  public static calculateVariationScore(raidOne: Raid, raidTwo: Raid): number {
-    let score = 10000;
+  public static calculateRaidPenaltyPoints(raid: Raid, detailedMode = false): number {
+    let score = 0;
+    // score penalty for missing people in raid
+    const raidCount = raid.tanks.length + raid.healers.length + raid.dps.length;
+    score = score - (25 - raidCount) * 200;
 
-    const applyRaidCompPenaltiesFn = (raid: Raid) => {
-      // score penalty for missing people in raid
-      const raidCount = raid.tanks.length + raid.healers.length + raid.dps.length;
-      score = score - (25 - raidCount) * 200;
+    // calculate metrics
+    const metric = this.getRaidMetric(raid);
 
-      // calculate metrics
-      const metric = this.getRaidMetric(raid);
-
-      // penalty for missing buffs
-      for (let buffId in metric.buffs) {
-        if (metric.buffs[buffId] === 0) {
-          score = score - 50;
-        }
+    // penalty for missing buffs
+    for (let buffId in metric.buffs) {
+      if (metric.buffs[buffId] === 0) {
+        score = score - 50;
       }
+    }
 
-      // custom penalty for stackable buffs
-      if (metric.buffs[Buff.PaladinBlessing] < 3) {
-        score = score - (3 - metric.buffs[Buff.PaladinBlessing]) * 25;
+    // penalty for paladin blessings
+    if (metric.buffs[Buff.PaladinBlessing] < 3) {
+      score = score - (3 - metric.buffs[Buff.PaladinBlessing]) * 25;
+    }
+
+    // penalty for missing debuffs
+    for (let debuffId in metric.debuffs) {
+      if (metric.debuffs[debuffId] === 0) {
+        score = score - 50;
       }
+    }
 
+    if (detailedMode) {
+      // penalty for stackable quality of life buffs
       if (metric.buffs[Buff.ManaReplenishment] < 2) {
         score = score - (2 - metric.buffs[Buff.ManaReplenishment]) * 20;
       }
 
       if (metric.buffs[Buff.PassiveHealing] < 3) {
         score = score - (3 - metric.buffs[Buff.PassiveHealing]) * 20;
-      }
-
-      // penalty for missing debuffs
-      for (let debuffId in metric.debuffs) {
-        if (metric.debuffs[debuffId] === 0) {
-          score = score - 50;
-        }
       }
 
       // penalty for missing cooldowns
@@ -58,61 +56,60 @@ export class RaidScoreHelpers {
         }
       }
 
-      // custom penalties for cooldowns
+      // penalties for specific cooldowns
       if (metric.cooldowns[Cooldown.DSac] < 2) {
         score = score - (2 - metric.buffs[Cooldown.DSac]) * 20;
-      }
-
-      if (metric.cooldowns[Cooldown.Heroism] < 1) {
-        score = score - 500;
       }
 
       if (metric.cooldowns[Cooldown.BattleRes] < 2) {
         score = score - (2 - metric.buffs[Cooldown.BattleRes]) * 20;
       }
+
+      if (metric.cooldowns[Cooldown.Heroism] < 1) {
+        score = score - 500;
+      }
     }
 
+    const raidClassMetric = this.getClassBalanceMetric(raid);
+    // apply penalty for not balanced healer setup
+    if (raidClassMetric.healers[ClassName.Paladin] !== 2) {
+      score = score - 500 * Math.abs(2 - raidClassMetric.healers[ClassName.Paladin]);
+    }
+    if (raidClassMetric.healers[ClassName.Shaman] + raidClassMetric.healers[ClassName.Druid] < 1) {
+      score = score - 200;
+    }
+    if (raidClassMetric.healers[ClassName.Priest] < 1) {
+      score = score - 200;
+    }
+
+    // apply penalty for not optimal tank setup
+    if ((raidClassMetric.tanks[ClassName.Paladin]) < 2) {
+      score = score - 200 * (2 - raidClassMetric.tanks[ClassName.Paladin]);
+    }
+
+    if (raid.tanks.length > 2 && raidClassMetric.tanks[ClassName.Druid] < 1) {
+      score = score - 100;
+    }
+    return Math.abs(score);
+  }
+
+  public static calculateVariationScore(raidOne: Raid, raidTwo: Raid): number {
+    let score = 10000;
+
     // apply penalties for raid comp issues (buffs debuffs cooldowns)
-    applyRaidCompPenaltiesFn(raidOne);
-    applyRaidCompPenaltiesFn(raidTwo);
+    score = score - this.calculateRaidPenaltyPoints(raidOne, true);
+    score = score - this.calculateRaidPenaltyPoints(raidTwo, true);
 
     // apply penalty for class balance (equal amount of each class in raids)
     const raidOneClassMetric = this.getClassBalanceMetric(raidOne);
     const raidTwoClassMetric = this.getClassBalanceMetric(raidTwo);
+
     Object.keys(ClassName).forEach(className => {
       const classCountDiff = Math.abs(raidOneClassMetric.total[className] - raidTwoClassMetric.total[className]);
       if (classCountDiff > 1) {
         score = score - 50 * classCountDiff;
       }
     })
-
-    // apply penalty for not balanced healer setup
-    if ((raidOneClassMetric.healers[ClassName.Paladin] + raidOneClassMetric.healers[ClassName.Shaman]) < 2) {
-      score = score - 100;
-    }
-    if ((raidTwoClassMetric.healers[ClassName.Paladin] + raidTwoClassMetric.healers[ClassName.Shaman]) < 2) {
-      score = score - 100;
-    }
-    if (raidOneClassMetric.healers[ClassName.Priest] > 2) {
-      score = score - 10;
-    }
-    if (raidTwoClassMetric.healers[ClassName.Priest] > 2) {
-      score = score - 100;
-    }
-
-    // apply penalty for not optimal tank setup
-    if ((raidOneClassMetric.tanks[ClassName.Paladin] + raidOneClassMetric.tanks[ClassName.Warrior]) < 2) {
-      score = score - 200;
-    }
-    if ((raidTwoClassMetric.tanks[ClassName.Paladin] + raidTwoClassMetric.tanks[ClassName.Warrior]) < 1) {
-      score = score - 200;
-    }
-    if (raidOneClassMetric.tanks[ClassName.Druid] < 1) {
-      score = score - 50;
-    }
-    if (raidTwoClassMetric.tanks[ClassName.Druid] < 1) {
-      score = score - 50;
-    }
 
     // apply penalty for bad melee/ranged balance
     const raidOneMeleeRangedDiff = Math.abs(raidOneClassMetric.melee - raidOneClassMetric.ranged);
@@ -136,14 +133,6 @@ export class RaidScoreHelpers {
     const priorityDiff = Math.abs(raidOnePrioritySum - raidTwoPrioritySum);
     if (priorityDiff > 20) {
       score = score - priorityDiff;
-    }
-
-    if (raidOnePrioritySum < DESIRED_PRIORITY_SCORE) {
-      score = score - (DESIRED_PRIORITY_SCORE - raidOnePrioritySum);
-    }
-
-    if (raidTwoPrioritySum < DESIRED_PRIORITY_SCORE) {
-      score = score - (DESIRED_PRIORITY_SCORE - raidTwoPrioritySum);
     }
 
     const benchedCharsWithHighScore = [...raidOne.bench, ...raidTwo.bench].filter(char => char.priority > 90).length;

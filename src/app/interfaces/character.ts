@@ -5,7 +5,7 @@ export interface Character {
   name?: string;
   class: PlayerClass;
   spec: Spec;
-  isOffSpec?: true,
+  isOffSpec?: boolean;
   isAlt?: boolean;
   priority?: number;
   firstRaidAvailable?: boolean;

@@ -6,25 +6,40 @@ import { Role } from '../enums/role';
 import { DataHelpers } from '../helpers/data-helpers';
 import { RaidScoreHelpers } from '../helpers/raid-score-helpers';
 
+const NUMBER_OF_ITERATIONS = 100;
+
 export interface CharacterPool {
   tanks: Character[];
   healers: Character[];
   dps: Character[];
 }
 
-export interface RosterVariaton {
+export interface RaidVariation {
   raidOne: Raid;
   raidTwo: Raid;
   score: number;
+}
+
+export interface RaidConfig {
+  numberOfTanks: number;
+  numberOfHealers: number;
+  numberOfDps: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class DataService {
-  numberOfTanks = 3;
-  numberOfHealers = 5;
-  numberOfDps = 17;
+  private raidOneConfig: RaidConfig = {
+    numberOfTanks: 3,
+    numberOfHealers: 4,
+    numberOfDps: 18,
+  }
+  private raidTwoConfig: RaidConfig = {
+    numberOfTanks: 3,
+    numberOfHealers: 5,
+    numberOfDps: 17,
+  }
 
   constructor() { }
 
@@ -32,109 +47,19 @@ export class DataService {
     const players = DataHelpers.convertRecordsToPlayerModels(records);
 
     const availableCharacters: Character[] = [];
+
     players.forEach(player => {
       availableCharacters.push(...player.mainCharacter);
       availableCharacters.push(...player.alts);
     });
 
-    const firstRaidAvailableChars = availableCharacters.filter(char => char.firstRaidAvailable);
-    const secondRaidAvailableChars = availableCharacters.filter(char => char.secondRaidAvailable);
+    const variations: RaidVariation[] = [];
 
-
-    const rosterVariations: RosterVariaton[] = [];
-
-    let currentTry = 0;
-    // Generate variations
-    while (currentTry < 100000) {
-      const raidOne: Raid = {
-        tanks: [],
-        healers: [],
-        dps: [],
-        bench: [],
-      };
-      const raidTwo: Raid = {
-        tanks: [],
-        healers: [],
-        dps: [],
-        bench: [],
-      };
-
-      const firstPool: CharacterPool = {
-        tanks: DataHelpers.getCharactersByRole(firstRaidAvailableChars, [Role.Tank]),
-        healers: DataHelpers.getCharactersByRole(firstRaidAvailableChars, [Role.Healer]),
-        dps: DataHelpers.getCharactersByRole(firstRaidAvailableChars, [Role.MeleeDps, Role.RangedDps])
-      }
-
-      const secondPool: CharacterPool = {
-        tanks: DataHelpers.getCharactersByRole(secondRaidAvailableChars, [Role.Tank]),
-        healers: DataHelpers.getCharactersByRole(secondRaidAvailableChars, [Role.Healer]),
-        dps: DataHelpers.getCharactersByRole(secondRaidAvailableChars, [Role.MeleeDps, Role.RangedDps])
-      }
-
-      for (let i = 0; i < this.numberOfTanks; i++) {
-        const raidOneChar = DataHelpers.getRandomCharacter(firstPool.tanks);
-        if (raidOneChar) {
-          raidOne.tanks.push(raidOneChar);
-          DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
-          DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
-        }
-
-        const raidTwoChar = DataHelpers.getRandomCharacter(secondPool.tanks);
-        if (raidTwoChar) {
-          raidTwo.tanks.push(raidTwoChar);
-          DataHelpers.removeCharactersFromPool([raidTwoChar], firstPool);
-          DataHelpers.removeCharactersFromPool([raidTwoChar], secondPool, true);
-        }
-      }
-
-      for (let i = 0; i < this.numberOfHealers; i++) {
-        const raidOneChar = DataHelpers.getRandomCharacter(firstPool.healers);
-        if (raidOneChar) {
-          raidOne.healers.push(raidOneChar);
-          DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
-          DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
-        }
-
-        const raidTwoChar = DataHelpers.getRandomCharacter(secondPool.healers);
-        if (raidTwoChar) {
-          raidTwo.healers.push(raidTwoChar);
-          DataHelpers.removeCharactersFromPool([raidTwoChar], firstPool);
-          DataHelpers.removeCharactersFromPool([raidTwoChar], secondPool, true);
-        }
-      }
-
-      for (let i = 0; i < this.numberOfDps; i++) {
-        const raidOneChar = DataHelpers.getRandomCharacter(firstPool.dps);
-        if (raidOneChar) {
-          raidOne.dps.push(raidOneChar);
-          DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
-          DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
-        }
-
-        const raidTwoChar = DataHelpers.getRandomCharacter(secondPool.dps);
-        if (raidTwoChar) {
-          raidTwo.dps.push(raidTwoChar);
-          DataHelpers.removeCharactersFromPool([raidTwoChar], firstPool);
-          DataHelpers.removeCharactersFromPool([raidTwoChar], secondPool, true);
-        }
-      }
-
-      raidOne.bench = DataHelpers.getAllAvailableCharactersFromPool(firstPool);
-      raidTwo.bench = DataHelpers.getAllAvailableCharactersFromPool(secondPool);
-
-      rosterVariations.push({
-        raidOne,
-        raidTwo,
-        score: RaidScoreHelpers.calculateVariationScore(raidOne, raidTwo),
-      })
-      currentTry++;
+    for (let i = 0; i < NUMBER_OF_ITERATIONS; i++) {
+      variations.push(this.generateVariation(availableCharacters));
     }
 
-    if (rosterVariations.length === 0) {
-      return [];
-    }
-
-    rosterVariations.sort((a,b) => {
+    variations.sort((a,b) => {
       if (a.score > b.score) {
         return -1;
       }
@@ -146,9 +71,81 @@ export class DataService {
       return 0;
     });
 
-    console.log(rosterVariations.slice(0,5));
+    return [variations[0].raidOne, variations[0].raidTwo];
 
-    return [rosterVariations[0]?.raidOne, rosterVariations[0]?.raidTwo];
   }
 
+  private generateVariation(availableCharacters: Character[]): RaidVariation {
+    const firstRaidAvailableChars = availableCharacters.filter(char => char.firstRaidAvailable);
+    const secondRaidAvailableChars = availableCharacters.filter(char => char.secondRaidAvailable);
+
+    const raidOne: Raid = {
+      tanks: [],
+      healers: [],
+      dps: [],
+      bench: [],
+    };
+    const raidTwo: Raid = {
+      tanks: [],
+      healers: [],
+      dps: [],
+      bench: [],
+    };
+
+    const firstPool: CharacterPool = {
+      tanks: DataHelpers.getCharactersByRole(firstRaidAvailableChars, [Role.Tank]),
+      healers: DataHelpers.getCharactersByRole(firstRaidAvailableChars, [Role.Healer]),
+      dps: DataHelpers.getCharactersByRole(firstRaidAvailableChars, [Role.MeleeDps, Role.RangedDps])
+    }
+
+    const secondPool: CharacterPool = {
+      tanks: DataHelpers.getCharactersByRole(secondRaidAvailableChars, [Role.Tank]),
+      healers: DataHelpers.getCharactersByRole(secondRaidAvailableChars, [Role.Healer]),
+      dps: DataHelpers.getCharactersByRole(secondRaidAvailableChars, [Role.MeleeDps, Role.RangedDps])
+    }
+
+    let canContinue = true;
+    while (canContinue) {
+      const raidOneChar = this.getBestPossibleCharacterForRaid(raidOne, firstPool, this.raidOneConfig);
+      if (raidOneChar) {
+        DataHelpers.addCharacterToRaid(raidOne, raidOneChar);
+        DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
+        DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
+      }
+
+      const raidTwoChar = this.getBestPossibleCharacterForRaid(raidTwo, secondPool, this.raidTwoConfig);
+      if (raidTwoChar) {
+        DataHelpers.addCharacterToRaid(raidTwo, raidTwoChar);
+        DataHelpers.removeCharactersFromPool([raidTwoChar], firstPool);
+        DataHelpers.removeCharactersFromPool([raidTwoChar], secondPool, true);
+      }
+
+      canContinue = !!raidOneChar || !!raidTwoChar;
+    }
+
+    raidOne.bench = DataHelpers.getAllAvailableCharactersFromPool(firstPool);
+    raidTwo.bench = DataHelpers.getAllAvailableCharactersFromPool(secondPool);
+
+    return {
+      raidOne,
+      raidTwo,
+      score: RaidScoreHelpers.calculateVariationScore(raidOne, raidTwo),
+    }
+  }
+
+  private getBestPossibleCharacterForRaid(raid: Raid, pool: CharacterPool, config: RaidConfig): Character {
+    if (raid.tanks.length < config.numberOfTanks && pool.tanks.length > 0) {
+      return DataHelpers.getBestPossibleCharacterFromPool(pool.tanks, raid);
+    }
+
+    if (raid.healers.length < config.numberOfHealers && pool.healers.length > 0) {
+      return DataHelpers.getBestPossibleCharacterFromPool(pool.healers, raid);
+    }
+
+    if ((raid.dps.length < config.numberOfDps && pool.dps.length > 0)) {
+      return DataHelpers.getBestPossibleCharacterFromPool(pool.dps, raid);
+    }
+
+    return null;
+  }
 }

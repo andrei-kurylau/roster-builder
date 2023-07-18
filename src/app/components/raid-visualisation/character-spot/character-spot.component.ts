@@ -13,7 +13,10 @@ export class CharacterSpotComponent {
   public get charName(): string {
     let charName = this.character.name;
     if (this.character.isAlt) {
-      charName+= ` (Alt)`
+      charName += ` (Alt)`;
+    }
+    if (this.character.isOffSpec) {
+      charName += ` (Offspec)`;
     }
     return charName;
   }
