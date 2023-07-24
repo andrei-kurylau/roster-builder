@@ -7,7 +7,7 @@ import { DataHelpers } from '../helpers/data-helpers';
 import { RaidScoreHelpers } from '../helpers/raid-score-helpers';
 import { GlobalHelpers } from '../helpers/global-helpers';
 
-const NUMBER_OF_ITERATIONS = 50000;
+const NUMBER_OF_ITERATIONS = 25000;
 
 export interface CharacterPool {
   tanks: Character[];
