@@ -1,12 +1,16 @@
 import { ListRecord } from "../components/players-list/interfaces/list-record";
 import { Classes } from "../constants/classes";
+import { ClassName } from "../enums/class-name";
 import { Role } from "../enums/role";
 import { Character } from "../interfaces/character";
 import { Player } from "../interfaces/player";
 import { Raid } from "../interfaces/raid";
-import { CharacterPool } from "../services/data-service.service";
+import { CharacterPool, RaidConfig } from "../services/data-service.service";
 import { GlobalHelpers } from "./global-helpers";
 import { RaidScoreHelpers } from "./raid-score-helpers";
+
+const ALT_MULTIPLIER = 0.75;
+const OFFSPEC_MULTIPLIER = 0.5;
 
 export class DataHelpers {
   public static removeCharactersFromPool(chars: Character[], pool: CharacterPool, removeAlts: boolean = false): void {
@@ -114,17 +118,17 @@ export class DataHelpers {
     }
   }
 
-  public static getBestPossibleCharacterFromPool(pool: Character[], raidOne: Raid): Character {
-    const currentPenaltyPoints = RaidScoreHelpers.calculateRaidPenaltyPoints(raidOne);
+  public static getBestScoreChar(characters: Character[], raid: Raid): Character {
+    const currentPenaltyPoints = RaidScoreHelpers.calculateRaidPenaltyPoints(raid);
     let bestCharOptions: Character[] = [];
     let currentBestCharScore = 0;
 
-    for (let character of pool) {
-      const raidCopy = GlobalHelpers.safeCopy(raidOne);
+    for (let character of characters) {
+      const raidCopy = GlobalHelpers.safeCopy(raid);
       this.addCharacterToRaid(raidCopy, character);
       const newPenaltyPoints = RaidScoreHelpers.calculateRaidPenaltyPoints(raidCopy);
       if (currentPenaltyPoints > newPenaltyPoints) {
-        const charScore = (currentPenaltyPoints - newPenaltyPoints) * (character.priority / 100) * (character.isOffSpec ? 0.5 : 1) * (character.isAlt ? 0.7 : 1);
+        const charScore = (currentPenaltyPoints - newPenaltyPoints) * (character.isOffSpec ? OFFSPEC_MULTIPLIER : 1) * (character.isAlt ? ALT_MULTIPLIER : 1);
         if (currentBestCharScore < charScore) {
           currentBestCharScore = charScore;
           bestCharOptions = [character];
@@ -136,13 +140,128 @@ export class DataHelpers {
     }
 
     // priority goes for characters who cant go to other raid
-    const filteredCharacters = bestCharOptions.filter(char => !char.firstRaidAvailable || !char.secondRaidAvailable);
+    const charsWhoCantGoOtherRaid = bestCharOptions.filter(char => !char.firstRaidAvailable || !char.secondRaidAvailable);
 
-    if (filteredCharacters?.length > 0) {
-      return this.getRandomCharacter(filteredCharacters);
+    if (charsWhoCantGoOtherRaid?.length > 0) {
+      bestCharOptions = [...charsWhoCantGoOtherRaid];
     }
 
-    return this.getRandomCharacter(bestCharOptions);
+    const maxPriority = Math.max(...bestCharOptions.map(char => +char.priority));
+    const finalPool = bestCharOptions.filter(char => +char.priority === maxPriority);
+    return this.getRandomCharacter(finalPool);
+  }
+
+  public static getBestPossibleCharacterFromPool(pool: Character[], raid: Raid, config?: RaidConfig): Character {
+    const role = pool[0]?.spec.role;
+
+    switch (role) {
+      case Role.Tank:
+        const mainSpecTanks = pool.filter(char => !char.isOffSpec);
+
+        if (raid.tanks.length < 2) {
+          const paladinsInPool = pool.filter(char => char.class.name === ClassName.Paladin);
+          const warriorsInPool = pool.filter(char => char.class.name === ClassName.Warrior);
+
+          if (paladinsInPool?.length > 0) {
+            const mainSpecPaladins = paladinsInPool.filter(char => !char.isOffSpec);
+            if (mainSpecPaladins.length > 0) {
+              return this.getBestScoreChar(mainSpecPaladins, raid);
+            }
+          }
+
+          if (warriorsInPool?.length > 0) {
+            const mainSpecWarriors = warriorsInPool.filter(char => !char.isOffSpec);
+            if (mainSpecWarriors.length > 0) {
+              return this.getBestScoreChar(mainSpecWarriors, raid);
+            }
+          }
+
+          if (mainSpecTanks?.length > 0) {
+            return this.getBestScoreChar(mainSpecTanks, raid);
+          }
+
+          if (paladinsInPool?.length > 0) {
+            return this.getBestScoreChar(paladinsInPool, raid);
+          }
+
+          if (warriorsInPool?.length > 0) {
+            return this.getBestScoreChar(warriorsInPool, raid);
+          }
+        } else {
+          const palOrWarTanksInRaid = raid.tanks.filter(char => (char.class.name === ClassName.Warrior) || (char.class.name === ClassName.Paladin));
+
+          if (mainSpecTanks?.length > 0) {
+            if (palOrWarTanksInRaid.length >= 2) {
+              const mainSpecDruids = pool.filter(char => !char.isOffSpec && char.class.name === ClassName.Druid);
+              if (mainSpecDruids.length > 0) {
+                return this.getBestScoreChar(mainSpecDruids, raid);
+              }
+
+              const mainSpecDKs = pool.filter(char => !char.isOffSpec && char.class.name === ClassName.DeathKnight);
+              if (mainSpecDKs.length > 0) {
+                return this.getBestScoreChar(mainSpecDruids, raid);
+              }
+            }
+
+            return this.getBestScoreChar(mainSpecTanks, raid);
+          }
+
+          if (palOrWarTanksInRaid.length >= 2) {
+            const offSpecDruids = pool.filter(char => char.class.name === ClassName.Druid);
+            if (offSpecDruids.length > 0) {
+              return this.getBestScoreChar(offSpecDruids, raid);
+            }
+
+            const offpecDKs = pool.filter(char => char.class.name === ClassName.DeathKnight);
+            if (offpecDKs.length > 0) {
+              return this.getBestScoreChar(offpecDKs, raid);
+            }
+          }
+        }
+
+        return this.getBestScoreChar(pool, raid);
+
+      case Role.Healer:
+        const mainSpecHealers = pool.filter(char => !char.isOffSpec);
+        const healerPool = mainSpecHealers.length > 0 ? mainSpecHealers : pool;
+        const paladinsCount = raid.healers.filter(char => char.class.name === ClassName.Paladin).length;
+        const priestsCount = raid.healers.filter(char => char.class.name === ClassName.Priest).length;
+        const shamansCount = raid.healers.filter(char => char.class.name === ClassName.Shaman).length;
+        const druidsCount = raid.healers.filter(char => char.class.name === ClassName.Druid).length;
+
+        if (paladinsCount < 2) {
+          const paladinHealers = healerPool.filter(char => char.class.name === ClassName.Paladin);
+          if (paladinHealers.length > 0) {
+            return this.getBestScoreChar(paladinHealers, raid);
+          }
+        }
+
+        if (priestsCount < 1) {
+          const priestHealers = healerPool.filter(char => char.class.name === ClassName.Priest);
+          if (priestHealers.length > 0) {
+            return this.getBestScoreChar(priestHealers, raid);
+          }
+        }
+
+        if (shamansCount < 1) {
+          const shamanHealers = healerPool.filter(char => char.class.name === ClassName.Shaman);
+          if (shamanHealers.length > 0) {
+            return this.getBestScoreChar(shamanHealers, raid);
+          }
+        }
+
+        if (druidsCount < 1) {
+          const druidHealers = healerPool.filter(char => char.class.name === ClassName.Druid);
+          if (druidHealers.length > 0) {
+            return this.getBestScoreChar(druidHealers, raid);
+          }
+        }
+
+        return this.getBestScoreChar(pool, raid);
+
+      default:
+        return this.getBestScoreChar(pool, raid);
+    }
   }
 
   public static getRandomCharacter(array: Character[]): Character {

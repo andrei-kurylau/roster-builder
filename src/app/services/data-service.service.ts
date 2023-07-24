@@ -37,8 +37,8 @@ export class DataService {
   }
   private raidTwoConfig: RaidConfig = {
     numberOfTanks: 3,
-    numberOfHealers: 5,
-    numberOfDps: 17,
+    numberOfHealers: 4,
+    numberOfDps: 18,
   }
 
   constructor() { }
@@ -106,13 +106,6 @@ export class DataService {
 
     let canContinue = true;
     while (canContinue) {
-      const raidOneChar = this.getBestPossibleCharacterForRaid(raidOne, firstPool, this.raidOneConfig);
-      if (raidOneChar) {
-        DataHelpers.addCharacterToRaid(raidOne, raidOneChar);
-        DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
-        DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
-      }
-
       const raidTwoChar = this.getBestPossibleCharacterForRaid(raidTwo, secondPool, this.raidTwoConfig);
       if (raidTwoChar) {
         DataHelpers.addCharacterToRaid(raidTwo, raidTwoChar);
@@ -120,6 +113,12 @@ export class DataService {
         DataHelpers.removeCharactersFromPool([raidTwoChar], secondPool, true);
       }
 
+      const raidOneChar = this.getBestPossibleCharacterForRaid(raidOne, firstPool, this.raidOneConfig);
+      if (raidOneChar) {
+        DataHelpers.addCharacterToRaid(raidOne, raidOneChar);
+        DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
+        DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
+      }
       canContinue = !!raidOneChar || !!raidTwoChar;
     }
 
@@ -135,15 +134,15 @@ export class DataService {
 
   private getBestPossibleCharacterForRaid(raid: Raid, pool: CharacterPool, config: RaidConfig): Character {
     if (raid.tanks.length < config.numberOfTanks && pool.tanks.length > 0) {
-      return DataHelpers.getBestPossibleCharacterFromPool(pool.tanks, raid);
+      return DataHelpers.getBestPossibleCharacterFromPool(pool.tanks, raid, config);
     }
 
     if (raid.healers.length < config.numberOfHealers && pool.healers.length > 0) {
-      return DataHelpers.getBestPossibleCharacterFromPool(pool.healers, raid);
+      return DataHelpers.getBestPossibleCharacterFromPool(pool.healers, raid, config);
     }
 
     if ((raid.dps.length < config.numberOfDps && pool.dps.length > 0)) {
-      return DataHelpers.getBestPossibleCharacterFromPool(pool.dps, raid);
+      return DataHelpers.getBestPossibleCharacterFromPool(pool.dps, raid, config);
     }
 
     return null;

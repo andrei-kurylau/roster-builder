@@ -23,7 +23,7 @@ export class RaidScoreHelpers {
     // penalty for missing buffs
     for (let buffId in metric.buffs) {
       if (metric.buffs[buffId] === 0) {
-        score = score - 100;
+        score = score - 150;
       }
     }
 
@@ -35,7 +35,7 @@ export class RaidScoreHelpers {
     // penalty for missing debuffs
     for (let debuffId in metric.debuffs) {
       if (metric.debuffs[debuffId] === 0) {
-        score = score - 100;
+        score = score - 150;
       }
     }
 
@@ -70,26 +70,29 @@ export class RaidScoreHelpers {
       }
     }
 
-    const raidClassMetric = this.getClassBalanceMetric(raid);
-    // apply penalty for not balanced healer setup
-    if (raidClassMetric.healers[ClassName.Paladin] !== 2) {
-      score = score - 500 * Math.abs(2 - raidClassMetric.healers[ClassName.Paladin]);
-    }
-    if (raidClassMetric.healers[ClassName.Shaman] + raidClassMetric.healers[ClassName.Druid] < 1) {
-      score = score - 200;
-    }
-    if (raidClassMetric.healers[ClassName.Priest] < 1) {
-      score = score - 200;
+    if (detailedMode) {
+      const raidClassMetric = this.getClassBalanceMetric(raid);
+      // apply penalty for not balanced healer setup
+      if (raidClassMetric.healers[ClassName.Paladin] !== 2) {
+        score = score - 250 * Math.abs(2 - raidClassMetric.healers[ClassName.Paladin]);
+      }
+      if (raidClassMetric.healers[ClassName.Shaman] + raidClassMetric.healers[ClassName.Druid] < 1) {
+        score = score - 200;
+      }
+      if (raidClassMetric.healers[ClassName.Priest] < 1) {
+        score = score - 200;
+      }
+
+      // apply penalty for not optimal tank setup
+      if ((raidClassMetric.tanks[ClassName.Paladin]) < 2) {
+        score = score - 250 * (2 - raidClassMetric.tanks[ClassName.Paladin]);
+      }
+
+      if (raid.tanks.length > 2 && raidClassMetric.tanks[ClassName.Druid] < 1) {
+        score = score - 100;
+      }
     }
 
-    // apply penalty for not optimal tank setup
-    if ((raidClassMetric.tanks[ClassName.Paladin]) < 2) {
-      score = score - 200 * (2 - raidClassMetric.tanks[ClassName.Paladin]);
-    }
-
-    if (raid.tanks.length > 2 && raidClassMetric.tanks[ClassName.Druid] < 1) {
-      score = score - 100;
-    }
     return Math.abs(score);
   }
 

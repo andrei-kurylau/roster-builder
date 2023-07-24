@@ -103,7 +103,7 @@ export const SpecDetails: {
   },
   // Warlock
   [SpecName.Affli]: {
-    buffs: [Buff.Intellect, Buff.Spirit],
+    buffs: [],
     debuffs: [Debuff.SpellCrit, Debuff.SpellDamage],
     cooldowns: [Cooldown.Healthstone]
   },
