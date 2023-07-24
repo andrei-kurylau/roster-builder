@@ -1,6 +1,10 @@
 import { ListRecord } from "../components/players-list/interfaces/list-record";
 import { Classes } from "../constants/classes";
+import { SpecDetails } from "../constants/spec-details";
+import { Buff } from "../enums/buff";
 import { ClassName } from "../enums/class-name";
+import { Cooldown } from "../enums/cooldown";
+import { Debuff } from "../enums/debuff";
 import { Role } from "../enums/role";
 import { Character } from "../interfaces/character";
 import { Player } from "../interfaces/player";
@@ -9,7 +13,7 @@ import { CharacterPool, RaidConfig } from "../services/data-service.service";
 import { GlobalHelpers } from "./global-helpers";
 import { RaidScoreHelpers } from "./raid-score-helpers";
 
-const ALT_MULTIPLIER = 0.75;
+const ALT_MULTIPLIER = 0.8;
 const OFFSPEC_MULTIPLIER = 0.5;
 
 export class DataHelpers {
@@ -50,7 +54,7 @@ export class DataHelpers {
         id: mainCharId,
         name: rec.name,
         class: Classes[rec.mainClass],
-        priority: rec.priority,
+        priority: rec.priority || 10,
         spec: Classes[rec.mainClass].specs.find(spec => spec.name === rec.mainSpec),
         isAlt: false,
         isOffSpec: false,
@@ -63,7 +67,7 @@ export class DataHelpers {
           id: mainCharId,
           name: rec.name,
           class: Classes[rec.mainClass],
-          priority: rec.priority,
+          priority: rec.priority || 10,
           spec: Classes[rec.mainClass].specs.find(spec => spec.name === rec.offSpec),
           isAlt: false,
           isOffSpec: true,
@@ -78,7 +82,7 @@ export class DataHelpers {
           id: altId,
           name: rec.name,
           class: Classes[rec.altClass],
-          priority: rec.altPriority,
+          priority: rec.altPriority || 10,
           spec: Classes[rec.altClass].specs.find(spec => spec.name === rec.altMainSpec),
           firstRaidAvailable: rec.firstRaidAvailable,
           secondRaidAvailable: rec.secondRaidAvailable,
@@ -90,7 +94,7 @@ export class DataHelpers {
             id: altId,
             name: rec.name,
             class: Classes[rec.altClass],
-            priority: rec.altPriority,
+            priority: rec.altPriority || 10,
             spec: Classes[rec.altClass].specs.find(spec => spec.name === rec.altOffSpec),
             isOffSpec: true,
             firstRaidAvailable: rec.firstRaidAvailable,
@@ -118,24 +122,18 @@ export class DataHelpers {
     }
   }
 
-  public static getBestScoreChar(characters: Character[], raid: Raid): Character {
-    const currentPenaltyPoints = RaidScoreHelpers.calculateRaidPenaltyPoints(raid);
+  public static getBestScoreChar(characters: Character[]): Character {
     let bestCharOptions: Character[] = [];
     let currentBestCharScore = 0;
 
     for (let character of characters) {
-      const raidCopy = GlobalHelpers.safeCopy(raid);
-      this.addCharacterToRaid(raidCopy, character);
-      const newPenaltyPoints = RaidScoreHelpers.calculateRaidPenaltyPoints(raidCopy);
-      if (currentPenaltyPoints > newPenaltyPoints) {
-        const charScore = (currentPenaltyPoints - newPenaltyPoints) * (character.isOffSpec ? OFFSPEC_MULTIPLIER : 1) * (character.isAlt ? ALT_MULTIPLIER : 1);
-        if (currentBestCharScore < charScore) {
-          currentBestCharScore = charScore;
-          bestCharOptions = [character];
-        }
-        if (currentBestCharScore === charScore) {
-          bestCharOptions.push(character);
-        }
+      const charScore = 1 * (character.isOffSpec ? OFFSPEC_MULTIPLIER : 1) * (character.isAlt ? ALT_MULTIPLIER : 1);
+      if (currentBestCharScore < charScore) {
+        currentBestCharScore = charScore;
+        bestCharOptions = [character];
+      }
+      if (currentBestCharScore === charScore) {
+        bestCharOptions.push(character);
       }
     }
 
@@ -165,28 +163,30 @@ export class DataHelpers {
           if (paladinsInPool?.length > 0) {
             const mainSpecPaladins = paladinsInPool.filter(char => !char.isOffSpec);
             if (mainSpecPaladins.length > 0) {
-              return this.getBestScoreChar(mainSpecPaladins, raid);
+              return this.getBestScoreChar(mainSpecPaladins);
             }
           }
 
           if (warriorsInPool?.length > 0) {
             const mainSpecWarriors = warriorsInPool.filter(char => !char.isOffSpec);
             if (mainSpecWarriors.length > 0) {
-              return this.getBestScoreChar(mainSpecWarriors, raid);
+              return this.getBestScoreChar(mainSpecWarriors);
             }
           }
 
           if (mainSpecTanks?.length > 0) {
-            return this.getBestScoreChar(mainSpecTanks, raid);
-          }
-
-          if (paladinsInPool?.length > 0) {
-            return this.getBestScoreChar(paladinsInPool, raid);
+            return this.getBestScoreChar(mainSpecTanks);
           }
 
           if (warriorsInPool?.length > 0) {
-            return this.getBestScoreChar(warriorsInPool, raid);
+            return this.getBestScoreChar(warriorsInPool);
           }
+
+          if (paladinsInPool?.length > 0) {
+            return this.getBestScoreChar(paladinsInPool);
+          }
+
+          return this.getBestScoreChar(pool);
         } else {
           const palOrWarTanksInRaid = raid.tanks.filter(char => (char.class.name === ClassName.Warrior) || (char.class.name === ClassName.Paladin));
 
@@ -194,32 +194,32 @@ export class DataHelpers {
             if (palOrWarTanksInRaid.length >= 2) {
               const mainSpecDruids = pool.filter(char => !char.isOffSpec && char.class.name === ClassName.Druid);
               if (mainSpecDruids.length > 0) {
-                return this.getBestScoreChar(mainSpecDruids, raid);
+                return this.getBestScoreChar(mainSpecDruids);
               }
 
               const mainSpecDKs = pool.filter(char => !char.isOffSpec && char.class.name === ClassName.DeathKnight);
               if (mainSpecDKs.length > 0) {
-                return this.getBestScoreChar(mainSpecDruids, raid);
+                return this.getBestScoreChar(mainSpecDruids);
               }
             }
 
-            return this.getBestScoreChar(mainSpecTanks, raid);
+            return this.getBestScoreChar(mainSpecTanks);
           }
 
           if (palOrWarTanksInRaid.length >= 2) {
             const offSpecDruids = pool.filter(char => char.class.name === ClassName.Druid);
             if (offSpecDruids.length > 0) {
-              return this.getBestScoreChar(offSpecDruids, raid);
+              return this.getBestScoreChar(offSpecDruids);
             }
 
             const offpecDKs = pool.filter(char => char.class.name === ClassName.DeathKnight);
             if (offpecDKs.length > 0) {
-              return this.getBestScoreChar(offpecDKs, raid);
+              return this.getBestScoreChar(offpecDKs);
             }
           }
-        }
 
-        return this.getBestScoreChar(pool, raid);
+          return this.getBestScoreChar(pool);
+        }
 
       case Role.Healer:
         const mainSpecHealers = pool.filter(char => !char.isOffSpec);
@@ -232,36 +232,86 @@ export class DataHelpers {
         if (paladinsCount < 2) {
           const paladinHealers = healerPool.filter(char => char.class.name === ClassName.Paladin);
           if (paladinHealers.length > 0) {
-            return this.getBestScoreChar(paladinHealers, raid);
+            return this.getBestScoreChar(paladinHealers);
           }
         }
 
         if (priestsCount < 1) {
           const priestHealers = healerPool.filter(char => char.class.name === ClassName.Priest);
           if (priestHealers.length > 0) {
-            return this.getBestScoreChar(priestHealers, raid);
+            return this.getBestScoreChar(priestHealers);
           }
         }
 
         if (shamansCount < 1) {
           const shamanHealers = healerPool.filter(char => char.class.name === ClassName.Shaman);
           if (shamanHealers.length > 0) {
-            return this.getBestScoreChar(shamanHealers, raid);
+            return this.getBestScoreChar(shamanHealers);
           }
         }
 
         if (druidsCount < 1) {
           const druidHealers = healerPool.filter(char => char.class.name === ClassName.Druid);
           if (druidHealers.length > 0) {
-            return this.getBestScoreChar(druidHealers, raid);
+            return this.getBestScoreChar(druidHealers);
           }
         }
 
-        return this.getBestScoreChar(pool, raid);
+        return this.getBestScoreChar(pool);
 
       default:
-        return this.getBestScoreChar(pool, raid);
+        const raidMetric = RaidScoreHelpers.getRaidMetric(raid);
+
+        for (let buff in raidMetric.buffs) {
+          if (raidMetric.buffs[buff] === 0) {
+            const charsWithBuff = this.getCharactersWithBuffs(pool, [buff as Buff]);
+            if (charsWithBuff.length > 0) {
+              return this.getBestScoreChar(charsWithBuff);
+            }
+          }
+        }
+
+        for (let debuff in raidMetric.debuffs) {
+          if (raidMetric.debuffs[debuff] === 0) {
+            const charsWithBuff = this.getCharactersWithBuffs(pool, [], [debuff as Debuff]);
+            if (charsWithBuff.length > 0) {
+              return this.getBestScoreChar(charsWithBuff);
+            }
+          }
+        }
+
+        return this.getBestScoreChar(pool);
     }
+  }
+
+  private static getCharactersWithBuffs(pool: Character[], buffs: Buff[] = [], debuffs: Debuff[] = [], cooldowns: Cooldown[] = []): Character[] {
+    return pool.filter(char => {
+      const spec = char.spec;
+      const specDetails = SpecDetails[spec.name];
+
+      let hasBuffs = false;
+      buffs.forEach(buff => {
+        if (specDetails.buffs.includes(buff)) {
+          hasBuffs = true;
+        }
+      });
+
+      let hasDebuffs = false;
+      debuffs.forEach(debuff => {
+        if (specDetails.debuffs.includes(debuff)) {
+          hasDebuffs = true;
+        }
+      });
+
+      let hasCooldowns = false;
+      cooldowns.forEach(cd => {
+        if (specDetails.cooldowns.includes(cd)) {
+          hasCooldowns = true;
+        }
+      });
+
+      return hasBuffs || hasDebuffs || hasCooldowns;
+    })
   }
 
   public static getRandomCharacter(array: Character[]): Character {

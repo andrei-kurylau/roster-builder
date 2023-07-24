@@ -11,13 +11,17 @@ import { Role } from '../../enums/role';
 export class RaidVisualisationComponent {
   @Input() raid: Raid;
 
+  public tanks: Character[];
+  public healers: Character[];
   public melee: Character[];
   public ranged: Character[];
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['raid']) {
-      this.melee = [];
-      this.ranged = [];
+      this.tanks = this.raid.tanks;
+      this.healers = this.sortByClassName(this.raid.healers);
+      const melee = [];
+      const ranged = [];
       this.raid.dps.forEach(char => {
         const dpsRole = [Role.MeleeDps, Role.RangedDps].includes(char.spec.role);
         if (!dpsRole) {
@@ -25,11 +29,25 @@ export class RaidVisualisationComponent {
         }
 
         if (char.spec.role === Role.MeleeDps) {
-          this.melee.push(char);
+          melee.push(char);
         } else {
-          this.ranged.push(char);
+          ranged.push(char);
         }
-      })
+      });
+      this.melee = this.sortByClassName(melee);
+      this.ranged = this.sortByClassName(ranged);
     }
+  }
+
+  private sortByClassName(charArray: Character[]): Character[] {
+    const copy = [...charArray];
+    copy.sort((a, b) => {
+      if (a.class.name === b.class.name) {
+        return 0;
+      }
+
+      return a.class.name > b.class.name ? 1 : -1;
+    });
+    return copy;
   }
 }

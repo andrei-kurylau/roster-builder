@@ -5,8 +5,9 @@ import { Character } from '../interfaces/character';
 import { Role } from '../enums/role';
 import { DataHelpers } from '../helpers/data-helpers';
 import { RaidScoreHelpers } from '../helpers/raid-score-helpers';
+import { GlobalHelpers } from '../helpers/global-helpers';
 
-const NUMBER_OF_ITERATIONS = 100;
+const NUMBER_OF_ITERATIONS = 50000;
 
 export interface CharacterPool {
   tanks: Character[];
@@ -53,11 +54,13 @@ export class DataService {
       availableCharacters.push(...player.alts);
     });
 
-    const variations: RaidVariation[] = [];
+    let variations: RaidVariation[] = [];
 
     for (let i = 0; i < NUMBER_OF_ITERATIONS; i++) {
       variations.push(this.generateVariation(availableCharacters));
     }
+
+    variations = variations.filter(variation => !!variation.score);
 
     variations.sort((a,b) => {
       if (a.score > b.score) {
@@ -71,8 +74,8 @@ export class DataService {
       return 0;
     });
 
+    console.log(variations);
     return [variations[0].raidOne, variations[0].raidTwo];
-
   }
 
   private generateVariation(availableCharacters: Character[]): RaidVariation {
@@ -106,19 +109,37 @@ export class DataService {
 
     let canContinue = true;
     while (canContinue) {
-      const raidTwoChar = this.getBestPossibleCharacterForRaid(raidTwo, secondPool, this.raidTwoConfig);
-      if (raidTwoChar) {
-        DataHelpers.addCharacterToRaid(raidTwo, raidTwoChar);
-        DataHelpers.removeCharactersFromPool([raidTwoChar], firstPool);
-        DataHelpers.removeCharactersFromPool([raidTwoChar], secondPool, true);
+      let raidOneChar: Character;
+      let raidTwoChar: Character;
+
+      const addCharToFirstRaid = () => {
+        raidOneChar = this.getBestPossibleCharacterForRaid(raidOne, firstPool, this.raidOneConfig);
+        if (raidOneChar) {
+          DataHelpers.addCharacterToRaid(raidOne, raidOneChar);
+          DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
+          DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
+        }
+      };
+
+      const addCharToSecondRaid = () => {
+        raidTwoChar = this.getBestPossibleCharacterForRaid(raidTwo, secondPool, this.raidTwoConfig);
+        if (raidTwoChar) {
+          DataHelpers.addCharacterToRaid(raidTwo, raidTwoChar);
+          DataHelpers.removeCharactersFromPool([raidTwoChar], firstPool);
+          DataHelpers.removeCharactersFromPool([raidTwoChar], secondPool, true);
+        }
+      };
+
+      const whereToStart = GlobalHelpers.randomNumberFromInterval(1, 2);
+
+      if (whereToStart === 1) {
+        addCharToFirstRaid();
+        addCharToSecondRaid();
+      } else {
+        addCharToSecondRaid();
+        addCharToFirstRaid();
       }
 
-      const raidOneChar = this.getBestPossibleCharacterForRaid(raidOne, firstPool, this.raidOneConfig);
-      if (raidOneChar) {
-        DataHelpers.addCharacterToRaid(raidOne, raidOneChar);
-        DataHelpers.removeCharactersFromPool([raidOneChar], firstPool, true);
-        DataHelpers.removeCharactersFromPool([raidOneChar], secondPool);
-      }
       canContinue = !!raidOneChar || !!raidTwoChar;
     }
 

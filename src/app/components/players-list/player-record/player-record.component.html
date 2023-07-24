@@ -7,7 +7,11 @@
   </mat-option>
 </mat-select>
 
-<input matInput type="text" [disabled]="!mainClass" [(ngModel)]="record.priority">
+<mat-select [(value)]="record.priority" [disabled]="!mainClass">
+  <mat-option *ngFor="let priorOption of priorityOptions" [value]="priorOption.value">
+    {{ priorOption.label }}
+  </mat-option>
+</mat-select>
 
 <mat-select [(value)]="record.mainSpec" [disabled]="!mainClass">
   <mat-option *ngFor="let playerSpec of mainSpecOptions" [value]="playerSpec.value">
@@ -28,7 +32,11 @@
   </mat-option>
 </mat-select>
 
-<input matInput type="text" [disabled]="!altClass" [(ngModel)]="record.altPriority">
+<mat-select [(value)]="record.altPriority" [disabled]="!altClass">
+  <mat-option *ngFor="let priorOption of priorityOptions" [value]="priorOption.value">
+    {{ priorOption.label }}
+  </mat-option>
+</mat-select>
 
 <mat-select [(value)]="record.altMainSpec" [disabled]="!altClass">
   <mat-option *ngFor="let playerSpec of altSpecOptions" [value]="playerSpec.value">

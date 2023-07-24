@@ -5,7 +5,7 @@
   <button mat-raised-button color="primary" (click)="importData()">Import</button>
   <button mat-raised-button color="primary" (click)="exportData()">Export</button>
   <button mat-raised-button color="primary" (click)="generateRosters()" [disabled]="isGenerating">
-    {{ !isGenerating ? 'Generate' : 'Loading' }}
+    {{ !isGenerating ? 'Generate' : 'Calculating...' }}
   </button>
 </div>
 

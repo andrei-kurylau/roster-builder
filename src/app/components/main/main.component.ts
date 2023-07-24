@@ -27,7 +27,7 @@ export class MainComponent {
     setTimeout(() => {
       this.raids = this.dataService.generateRosters(this.playersList.records);
       this.isGenerating = false;
-    }, 0);
+    }, 50);
   }
 
   public importData(): void {

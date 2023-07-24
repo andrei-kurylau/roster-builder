@@ -15,6 +15,7 @@ export class PlayerRecordComponent {
   public altClassColor: string = '';
   public mainSpecOptions: any[] = [];
   public altSpecOptions: any[] = [];
+  public priorityOptions: any[] = [];
 
   ngOnInit() {
     this.classOptions = Object.keys(ClassName).map(cName => {
@@ -26,6 +27,14 @@ export class PlayerRecordComponent {
       }
     });
     this.classOptions.unshift({ label: '', value: null });
+
+    this.priorityOptions = [];
+    for(let i = 10; i >= 0; i--) {
+      this.priorityOptions.push({
+        label: i,
+        value: i,
+      });
+    };
 
     if (this.record.mainClass) {
       this.mainSpecOptions = this.generateSpecOptions(this.record.mainClass);
@@ -58,6 +67,7 @@ export class PlayerRecordComponent {
     this.record.mainClass = value;
     this.record.mainSpec = undefined;
     this.record.offSpec = undefined;
+    this.record.priority = value ? 10 : undefined;
     this.mainClassColor = Classes[value]?.color;
 
     if (value) {
@@ -73,6 +83,7 @@ export class PlayerRecordComponent {
     this.record.altClass = value;
     this.record.altMainSpec = undefined;
     this.record.altOffSpec = undefined;
+    this.record.altPriority = value ? 10 : undefined;
     this.altClassColor = Classes[value]?.color;
 
     if (value) {
